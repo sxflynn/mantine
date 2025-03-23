@@ -295,13 +295,36 @@ So here is the path I can see for rendering a Demo:
 
 To render a demo you need to provide:
  ```
- data: MantineDemo;
-    demoProps?: {
-        defaultExpanded?: boolean;
-        maxCollapsedHeight?: number;
+  data: MantineDemo;
+  demoProps?: {
+    defaultExpanded?: boolean;
+    maxCollapsedHeight?: number;
 ```
 
-Cool. So the biggest thing is looking at that `data` prop.
+Cool. So the biggest thing is looking at that `data` prop. Let's drill back up to `Alert`.
+
+1. `alert.mdx` in `apps/mantine.dev/src/pages/core/alert.mdx`
+1. Find the first instance of `<Demo data={AlertDemos.configurator} />`
+1. Ok theres that `Demo` component. What exactly is the `data`?
+1. `packages/@docs/demos/src/index.ts` -> `export * as AlertDemos from './demos/core/Alert';`
+1. `packages/@docs/demos/src/demos/core/Alert/index.ts` -> `export { configurator } from './Alert.demo.configurator'; export { stylesApi } from './Alert.demo.stylesApi';`
+1. Which brings us to the `export const configurator: MantineDemo = {` object.
+
+Cool, so now we have the `data` object used in the `Demo` component, located at `packages/@mantinex/demo/src/Demo/Demo.tsx`.
+
+So first we see the `type: 'configurator',` property. So it returns:
+
+```tsx
+case 'configurator':
+      return (
+        <ConfiguratorDemo {...data} {...demoProps}>
+          <data.component />
+        </ConfiguratorDemo>
+      );
+```
+
+
+
 
 # Functions that need to be created
  - How to display demo code in its pure string form
