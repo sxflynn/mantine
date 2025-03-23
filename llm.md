@@ -261,6 +261,10 @@ We see:
 
 So how did the final output only have `variant="light" color="blue" title="Alert title"` why did it exclude `withCloseButton` and `radius`?
 
+Well, `radius` initialValue and libraryValue are both `'sm'` and `withCloseButton` initialValue and libraryValue are both `false`.But `color` and `title` are different initialValues from the libraryValue.
+
+What about `variant="light"`
+
 Well let's examine `staticVariantsControl`
 
 ```
@@ -272,13 +276,32 @@ export const staticVariantsControl: ConfiguratorControlOptions = {
   libraryValue: '__none__',
 };
 ```
-Nope, that's just the `variant=
+In that case it says `initialValue` is `filled` in the code, but then in the actual `controls` array it's set to `initialValue`: `'light'`.
+
+So that's how we got it.
+
+### So is there code that already does this parsing stuff?
+
+I think so. We need to find the `Demo` function and see how it takes all this config stuff and actually renders.
+
+Here is the `.d.ts` definition : `packages/@mantinex/demo/lib/Demo/Demo.d.ts`
+
+I found `Demo.tsx`: `packages/@mantinex/demo/src/Demo/Demo.tsx`
+
+Ahh I see, the `@mantinex` package seems to be directly related to rendering components specifically on the dev site.
 
 
+So here is the path I can see for rendering a Demo:
 
+To render a demo you need to provide:
+ ```
+ data: MantineDemo;
+    demoProps?: {
+        defaultExpanded?: boolean;
+        maxCollapsedHeight?: number;
+```
 
-
-
+Cool. So the biggest thing is looking at that `data` prop.
 
 # Functions that need to be created
  - How to display demo code in its pure string form
