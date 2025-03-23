@@ -112,4 +112,178 @@ When you look at the beginning:
 <Demo data={ButtonDemos.configurator} />
 ```
 
-This `ButtonDemos` thing seems like it might be important. Because we *could* just ignore all the `<Demo>` components but... seems like we should actually
+This `ButtonDemos` thing seems like it might be important. Because we *could* just ignore all the `<Demo>` components but... seems like we should actually parse it and show it?
+
+Now on the actual docs site, what is shown is the actual component (we cannot show that here) and this code:
+```
+import { Button } from '@mantine/core';
+
+function Demo() {
+  return <Button variant="filled">Button</Button>;
+}
+```
+Maybe the strategy is to figure out how to grab that text block from a `Demo` component.
+
+```packages/@docs/demos/src/index.ts
+export * as ButtonDemos from './demos/core/Button';
+```
+
+```packages/@docs/demos/src/demos/core/Button/index.ts
+export { configurator } from './Button.demo.configurator';
+```
+
+Ok now we are at `packages/@docs/demos/src/demos/core/Button/Button.demo.configurator.tsx`
+
+Here we see
+```
+const code = `
+import { Button } from '@mantine/core';
+
+function Demo() {
+  return <Button{{props}}>Button</Button>;
+}
+`;
+```
+
+So it seems like this code 'object' should be string outputted. But what to do with the {{props}} thing.
+
+In the actual code, `props` is = to `variant="filled"`
+
+
+Hmm, in the `Button.demo.fullWidth` file, the actual output code says `return <Button fullWidth>Full width button</Button>;` and the code in this file is `return <Button fullWidth>Full width button</Button>;` so in that case, the code in the `code` object is good as is.
+
+Ok back to `Button.demo.configurator` so I followed the `configurator` object which is
+
+```
+export const configurator: MantineDemo = {
+  type: 'configurator',
+  component: Wrapper,
+  code,
+  centered: true,
+  controls: [
+    interactiveVariantsControl,
+    { type: 'color', prop: 'color', initialValue: 'blue', libraryValue: 'blue' },
+    { type: 'size', prop: 'size', initialValue: 'sm', libraryValue: 'sm' },
+    { type: 'size', prop: 'radius', initialValue: 'sm', libraryValue: 'sm' },
+  ],
+};
+```
+
+I followed `interactiveVariantsControl` which is imported from `import { interactiveVariantsControl } from '../../../shared';` and it has:
+
+```
+export const interactiveVariantsControl: ConfiguratorControlOptions = {
+  type: 'select',
+  prop: 'variant',
+  data: INTERACTIVE_VARIANTS,
+  initialValue: 'filled',
+  libraryValue: '__none__',
+};
+```
+
+Boom. So when you encounter `{{props}}` you  have to find the `prop` and `initialValue`.
+
+Let me see if this also works in another one with `{{props}}`.
+
+Let's look at `Alert`
+
+`packages/@docs/demos/src/demos/core/Alert/Alert.demo.configurator.tsx`
+
+```
+const code = `
+import { Alert } from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
+
+function Demo() {
+  const icon = <IconInfoCircle />;
+  return (
+    <Alert{{props}} icon={icon}>
+      {{children}}
+    </Alert>
+  );
+}
+`;
+```
+
+and this is the target code
+```
+import { Alert } from '@mantine/core';
+import { IconInfoCircle } from '@tabler/icons-react';
+
+function Demo() {
+  const icon = <IconInfoCircle />;
+  return (
+    <Alert variant="light" color="blue" title="Alert title" icon={icon}>
+      Lorem ipsum dolor sit, amet consectetur adipisicing elit. At officiis, quae tempore necessitatibus placeat saepe.
+    </Alert>
+  );
+}
+```
+
+btw this is 89 tokens, which means in a 30,000 token limit we could fit 337 of these types of blocks.
+
+Okay so how do we resolve `{{props}}` which is `variant="light" color="blue" title="Alert title"` and `{{children}}` which is the Lorem ipsum text?
+
+### `{{props}}`
+
+If you look in the `configurator` object again:
+```
+export const configurator: MantineDemo = {
+  type: 'configurator',
+  component: Wrapper,
+  code,
+  centered: true,
+  maxWidth: 400,
+  controls: [
+    { ...(staticVariantsControl as any), initialValue: 'light' },
+    { type: 'color', prop: 'color', initialValue: 'blue', libraryValue: null },
+    { type: 'size', prop: 'radius', initialValue: 'sm', libraryValue: 'sm' },
+    { type: 'boolean', prop: 'withCloseButton', initialValue: false, libraryValue: false },
+    { type: 'string', prop: 'title', initialValue: 'Alert title', libraryValue: null },
+    {
+      type: 'string',
+      prop: 'children',
+      initialValue:
+        'Lorem ipsum dolor sit, amet consectetur adipisicing elit. At officiis, quae tempore necessitatibus placeat saepe.',
+      libraryValue: null,
+    },
+  ],
+};
+```
+
+We see:
+
+- color = blue
+- radius = sm
+- withCloseButton = false
+- title = 'Alert title'
+- children = 'Lorem ipsum...
+
+So how did the final output only have `variant="light" color="blue" title="Alert title"` why did it exclude `withCloseButton` and `radius`?
+
+Well let's examine `staticVariantsControl`
+
+```
+export const staticVariantsControl: ConfiguratorControlOptions = {
+  type: 'select',
+  prop: 'variant',
+  data: STATIC_VARIANTS,
+  initialValue: 'filled',
+  libraryValue: '__none__',
+};
+```
+Nope, that's just the `variant=
+
+
+
+
+
+
+
+# Functions that need to be created
+ - How to display demo code in its pure string form
+
+
+## Utilities
+ - If you detect a string that begins with 'Lorem ipsum dolor sit' then slice off the rest of the string.
+ - Count the tokens of the entire output
