@@ -323,6 +323,10 @@ case 'configurator':
       );
 ```
 
+Cool so let's look at `ConfiguratorDemo`
+
+Interesting..... `function transformCodePayload`, this might be the key.
+
 
 
 
